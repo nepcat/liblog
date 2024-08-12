@@ -18,7 +18,9 @@
  */
 
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
+
 #include <time.h>
 
 /* NOTE: Remember to change the path if you move the header */
@@ -32,88 +34,118 @@
 /*----------------------------------------------------------------------------*/
 /* Private variables */
 
-static const char* log_tags[LOG_TAGS] = { [LOG_TAG_DBG] = "DEBUG",
-                                          [LOG_TAG_INF] = "INFO ",
-                                          [LOG_TAG_WRN] = "WARN ",
-                                          [LOG_TAG_ERR] = "ERROR",
-                                          [LOG_TAG_FTL] = "FATAL" };
+static const char *log_tags[LOG_TAGS] = {[LOG_TAG_DEBUG] = "DEBUG",
+                                         [LOG_TAG_INFO] = "INFO ",
+                                         [LOG_TAG_WARN] = "WARN ",
+                                         [LOG_TAG_ERROR] = "ERROR",
+                                         [LOG_TAG_FATAL] = "FATAL"};
 
-#ifdef LOG_COLOR
+#ifdef LOG_USE_COLOR
 #define LOG_COLOR_RESET "\x1b[0m"
 
 #ifndef LOG_COLOR_DIM
 #define LOG_COLOR_DIM "\x1b[37m"
 #endif /* LOG_COLOR_DIM */
 
-static const char* log_colors[LOG_TAGS] = { [LOG_TAG_DBG] = "\x1b[32m",
-                                            [LOG_TAG_INF] = "\x1b[36m",
-                                            [LOG_TAG_WRN] = "\x1b[33m",
-                                            [LOG_TAG_ERR] = "\x1b[1;31m",
-                                            [LOG_TAG_FTL] = "\x1b[1;31m" };
+static const char *log_colors[LOG_TAGS] = {[LOG_TAG_DEBUG] = "\x1b[32m",
+                                           [LOG_TAG_INFO] = "\x1b[36m",
+                                           [LOG_TAG_WARN] = "\x1b[33m",
+                                           [LOG_TAG_ERROR] = "\x1b[1;31m",
+                                           [LOG_TAG_FATAL] = "\x1b[1;31m"};
 #else
 #define LOG_COLOR_RESET ""
-#define LOG_COLOR_DIM   ""
-static const char* log_colors[LOG_TAGS] = { [LOG_TAG_DBG] = "",
-                                            [LOG_TAG_INF] = "",
-                                            [LOG_TAG_WRN] = "",
-                                            [LOG_TAG_ERR] = "",
-                                            [LOG_TAG_FTL] = "" };
-#endif /* LOG_COLOR */
+#define LOG_COLOR_DIM ""
+static const char *log_colors[LOG_TAGS] = {[LOG_TAG_DEBUG] = "",
+                                           [LOG_TAG_INFO] = "",
+                                           [LOG_TAG_WARN] = "",
+                                           [LOG_TAG_ERROR] = "",
+                                           [LOG_TAG_FATAL] = ""};
+#endif /* LOG_USE_COLOR */
 
 /*----------------------------------------------------------------------------*/
 /* Private functions */
 
-static void log_write_fp(FILE* fp, enum ELogTag tag, const char* func,
-                         const char* fmt, va_list va) {
-    time_t now;
-    struct tm* tm;
+static void log_write_fp(FILE *fp, enum ELogTag tag, const char *func,
+                         const char *fmt, va_list va) {
+#if defined(LOG_DATE) || defined(LOG_TIME)
+  time_t now;
+  struct tm *tm;
 
-    /* Avoid -Wunused-variable */
-    IGNORE_UNUSED(log_tags);
-    IGNORE_UNUSED(log_colors);
-    IGNORE_UNUSED(tag);
-    IGNORE_UNUSED(func);
-    IGNORE_UNUSED(now);
-    IGNORE_UNUSED(tm);
+  time(&now);
+#ifdef LOG_UTC
+  tm = gmtime(&now);
+#else
+  tm = localtime(&now);
+#endif
 
-    time(&now);
-    tm = localtime(&now);
+#endif
+
+  /* Avoid -Wunused-variable */
+  IGNORE_UNUSED(log_tags);
+  IGNORE_UNUSED(log_colors);
+  IGNORE_UNUSED(tag);
+  IGNORE_UNUSED(func);
+
+#if defined(LOG_DATE) || defined(LOG_TIME) || defined(LOG_TAG) ||              \
+    defined(LOG_FUNC)
+  fputc('[', fp);
+  bool printed_before = false;
+#endif
 
 #ifdef LOG_DATE
-    /* Draw the date */
-    fprintf(fp, "%04d-%02d-%02d ", 1900 + tm->tm_year, tm->tm_mon, tm->tm_mday);
+  /* Draw the date */
+  fprintf(fp, "%04d-%02d-%02d", 1900 + tm->tm_year, tm->tm_mon, tm->tm_mday);
+  printed_before = true;
 #endif
 
 #ifdef LOG_TIME
-    /* Draw the time */
-    fprintf(fp, "%02d:%02d:%02d ", tm->tm_hour, tm->tm_min, tm->tm_sec);
+  /* Draw the time */
+  if (printed_before) {
+    fputc(' ', fp);
+  }
+  fprintf(fp, "%02d:%02d:%02d", tm->tm_hour, tm->tm_min, tm->tm_sec);
+  printed_before = true;
 #endif
 
 #ifdef LOG_TAG
-    /* Draw the tag (ERROR, WARNING, etc.) */
-    fprintf(fp, "%s%s%s ", log_colors[tag], log_tags[tag], LOG_COLOR_RESET);
+  if (printed_before) {
+    fputc(' ', fp);
+  }
+  /* Draw the tag (ERROR, WARNING, etc.) */
+  fprintf(fp, "%s%s%s", log_colors[tag], log_tags[tag], LOG_COLOR_RESET);
+  printed_before = true;
 #endif
 
 #ifdef LOG_FUNC
-    /* Draw the function name */
-    fprintf(fp, "%s%s:%s ", LOG_COLOR_DIM, func, LOG_COLOR_RESET);
+  if (printed_before) {
+    fputc(' ', fp);
+  }
+  /* Draw the function name */
+  fprintf(fp, "%s%s()%s", LOG_COLOR_DIM, func, LOG_COLOR_RESET);
+  printed_before = true;
 #endif
 
-    /* Draw the user message */
-    vfprintf(fp, fmt, va);
-    fputc('\n', fp);
-    fflush(fp);
+#if defined(LOG_DATE) || defined(LOG_TIME) || defined(LOG_TAG) ||              \
+    defined(LOG_FUNC)
+  fputc(']', fp);
+  fputc(' ', fp);
+#endif
+
+  /* Draw the user message */
+  vfprintf(fp, fmt, va);
+  fputc('\n', fp);
+  fflush(fp);
 }
 
 /*----------------------------------------------------------------------------*/
 /* Public functions */
 
-void log_write(enum ELogTag tag, const char* func, const char* fmt, ...) {
-    va_list va;
-    va_start(va, fmt);
+void log_write(enum ELogTag tag, const char *func, const char *fmt, ...) {
+  va_list va;
+  va_start(va, fmt);
 
-    /* TODO: Iterate private list of FILE pointers */
-    log_write_fp(LOG_FP, tag, func, fmt, va);
+  /* TODO: Iterate private list of FILE pointers */
+  log_write_fp(LOG_FP, tag, func, fmt, va);
 
-    va_end(va);
+  va_end(va);
 }
