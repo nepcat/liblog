@@ -9,7 +9,7 @@
  * any later version.
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of  MERCHANTABILITY or
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
@@ -47,6 +47,7 @@
 #endif /* LOG_NO_DEFAULT */
 
 #ifdef LOG_PRINT_ALL
+#define LOG_PRINT_TRACE
 #define LOG_PRINT_DEBUG
 #define LOG_PRINT_INFO
 #define LOG_PRINT_WARN
@@ -58,6 +59,7 @@
 /* Enums */
 
 enum ELogTag {
+  LOG_TAG_TRACE,
   LOG_TAG_DEBUG,
   LOG_TAG_INFO,
   LOG_TAG_WARN,
@@ -71,6 +73,12 @@ enum ELogTag {
 /* Functions and callable macros */
 
 void log_write(enum ELogTag tag, const char *func, const char *fmt, ...);
+
+#ifdef LOG_PRINT_TRACE
+#define log_trace(...) log_write(LOG_TAG_TRACE, __func__, __VA_ARGS__)
+#else
+#define log_trace(...)
+#endif
 
 #ifdef LOG_PRINT_DEBUG
 #define log_debug(...) log_write(LOG_TAG_DEBUG, __func__, __VA_ARGS__)

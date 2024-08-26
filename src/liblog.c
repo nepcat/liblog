@@ -9,7 +9,7 @@
  * any later version.
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of  MERCHANTABILITY or
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
@@ -34,11 +34,10 @@
 /*----------------------------------------------------------------------------*/
 /* Private variables */
 
-static const char *log_tags[LOG_TAGS] = {[LOG_TAG_DEBUG] = "DEBUG",
-                                         [LOG_TAG_INFO] = "INFO ",
-                                         [LOG_TAG_WARN] = "WARN ",
-                                         [LOG_TAG_ERROR] = "ERROR",
-                                         [LOG_TAG_FATAL] = "FATAL"};
+static const char *log_tags[LOG_TAGS] = {
+    [LOG_TAG_TRACE] = "TRACE", [LOG_TAG_DEBUG] = "DEBUG",
+    [LOG_TAG_INFO] = "INFO ",  [LOG_TAG_WARN] = "WARN ",
+    [LOG_TAG_ERROR] = "ERROR", [LOG_TAG_FATAL] = "FATAL"};
 
 #ifdef LOG_USE_COLOR
 #define LOG_COLOR_RESET "\x1b[0m"
@@ -47,19 +46,16 @@ static const char *log_tags[LOG_TAGS] = {[LOG_TAG_DEBUG] = "DEBUG",
 #define LOG_COLOR_DIM "\x1b[37m"
 #endif /* LOG_COLOR_DIM */
 
-static const char *log_colors[LOG_TAGS] = {[LOG_TAG_DEBUG] = "\x1b[32m",
-                                           [LOG_TAG_INFO] = "\x1b[36m",
-                                           [LOG_TAG_WARN] = "\x1b[33m",
-                                           [LOG_TAG_ERROR] = "\x1b[1;31m",
-                                           [LOG_TAG_FATAL] = "\x1b[1;31m"};
+static const char *log_colors[LOG_TAGS] = {
+    [LOG_TAG_TRACE] = "\x1b[36m",   [LOG_TAG_DEBUG] = "\x1b[36m",
+    [LOG_TAG_INFO] = "\x1b[32m",    [LOG_TAG_WARN] = "\x1b[33m",
+    [LOG_TAG_ERROR] = "\x1b[1;31m", [LOG_TAG_FATAL] = "\x1b[1;31m"};
 #else
 #define LOG_COLOR_RESET ""
 #define LOG_COLOR_DIM ""
-static const char *log_colors[LOG_TAGS] = {[LOG_TAG_DEBUG] = "",
-                                           [LOG_TAG_INFO] = "",
-                                           [LOG_TAG_WARN] = "",
-                                           [LOG_TAG_ERROR] = "",
-                                           [LOG_TAG_FATAL] = ""};
+static const char *log_colors[LOG_TAGS] = {
+    [LOG_TAG_TRACE] = "", [LOG_TAG_DEBUG] = "", [LOG_TAG_INFO] = "",
+    [LOG_TAG_WARN] = "",  [LOG_TAG_ERROR] = "", [LOG_TAG_FATAL] = ""};
 #endif /* LOG_USE_COLOR */
 
 /*----------------------------------------------------------------------------*/
